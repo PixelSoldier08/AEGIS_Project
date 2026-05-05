@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stark-OS | Protocol 14</title>
-    <!-- Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
             --stark-blue: #00d4ff;
-            --stark-red: #ff4d4d;
             --terminal-green: #00ffcc;
         }
 
@@ -23,52 +21,44 @@
             justify-content: center; 
             align-items: center;
             height: 100vh;
-            background-size: cover;
-            background-position: center;
         }
 
         .ui-container {
             border: 1px solid var(--stark-blue);
-            padding: 50px;
+            padding: 40px 50px;
             background: rgba(0, 0, 0, 0.9);
             text-align: center;
             box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
             z-index: 10;
-            border-radius: 5px;
         }
-
-        h2 { color: var(--stark-blue); letter-spacing: 2px; }
 
         input {
             background: #111;
             border: 1px solid var(--stark-blue);
             color: white;
             padding: 12px;
-            margin: 20px 0;
             width: 250px;
             text-align: center;
             outline: none;
-            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
         }
 
         button {
             padding: 12px 30px;
             cursor: pointer;
             font-weight: bold;
+            background: var(--stark-blue);
+            color: black;
             border: none;
             text-transform: uppercase;
-            transition: 0.3s;
         }
 
-        #yes-btn { background: var(--stark-blue); color: black; position: relative; z-index: 101; }
-        
         #no-btn { 
-            background: var(--stark-red); 
+            background: #ff4d4d; 
             color: white; 
             position: fixed; 
             transition: all 0.15s ease-out;
             z-index: 100;
-            white-space: nowrap;
         }
 
         #terminal {
@@ -78,10 +68,8 @@
             color: var(--terminal-green);
             width: 80%;
             max-width: 700px;
-            background: rgba(0, 0, 0, 0.95);
             padding: 30px;
             border-left: 4px solid var(--terminal-green);
-            z-index: 50;
         }
 
         .video-overlay {
@@ -97,46 +85,75 @@
 </head>
 <body onmousemove="flee(event)">
 
-    <!-- PHASE 1: LOGIN GATEWAY -->
+    <!-- LOGIN GATEWAY -->
     <div id="auth-gate" class="ui-container">
-        <h2>SYSTEM ENCRYPTION</h2>
-        <input type="password" id="passInput" placeholder="ENTER ACCESS CODE">
+        <h2>STARK AUTHENTICATION</h2>
+        <input type="text" id="usernameInput" placeholder="USER NAME">
         <br>
-        <button id="yes-btn" onclick="verifyPassword()">INITIALIZE</button>
+        <input type="password" id="passInput" placeholder="ACCESS CODE">
+        <br>
+        <button onclick="verifyCredentials()">INITIALIZE</button>
     </div>
 
-    <!-- PHASE 2: THE INTERACTIVE QUESTION -->
+    <!-- THE QUESTION -->
     <div id="question-ui" class="ui-container" style="display: none;">
-        <h1>Are you a Vijay fan?</h1>
+        <h1 id="welcomeMessage">SYSTEM ONLINE</h1>
         <div style="margin-top: 50px; position: relative; height: 100px;">
-            <button id="yes-btn" onclick="triggerCelebration()">YES</button>
-            <!-- Initial visible position for the NO button -->
-            <button id="no-btn" style="left: 55%; top: 50%;">NO</button>
+            <button onclick="triggerCelebration()">YES</button>
+            <button id="no-btn" style="left: 60%; top: 50%;">NO</button>
         </div>
     </div>
 
-    <!-- PHASE 3: THE HACKING TERMINAL -->
     <div id="terminal"></div>
 
-    <!-- PHASE 4: FULL-SCREEN VIDEO -->
     <div id="video-wrap" class="video-overlay">
         <video id="celebrationVideo" controls>
-            <!-- Ensure this filename matches your uploaded file exactly -->
             <source src="vijay_entry.mp4" type="video/mp4">
         </video>
     </div>
 
-    <script>
-        // Use a consistent password across the app[cite: 2, 3]
-        const SECRET_KEY = "STARK_2026"; 
+    <!-- THE AUDIO ELEMENTS -->
+    <audio id="vijayRef">
+        <source src="vijay_voice.mp3" type="audio/mpeg">
+    </audio>
 
-        function verifyPassword() {
-            const input = document.getElementById('passInput').value;
-            if (input === SECRET_KEY) {
+    <script>
+        const SECRET_KEY = "STARK_2026";
+        let currentUser = "";
+
+        function playPersonalizedSequence(name) {
+            const audio = document.getElementById('vijayRef');
+            
+            // 1. Play the Original Audio first
+            audio.play();
+
+            // 2. Schedule the Username Greeting
+            // We set a small delay so the name is spoken over the audio's background or right after
+            setTimeout(() => {
+                const msg = new SpeechSynthesisUtterance();
+                msg.text = `Welcome... ${name}.`;
+                msg.rate = 0.8; // Deep, slow voice
+                msg.pitch = 0.5; // Lower pitch to match the "Stark" vibe
+                window.speechSynthesis.speak(msg);
+            }, 2500); // Adjust this delay (in ms) to match the timing of your mp3
+
+            // 3. Reveal the UI after the greeting starts
+            setTimeout(() => {
                 document.getElementById('auth-gate').style.display = "none";
                 document.getElementById('question-ui').style.display = "block";
+                document.getElementById('welcomeMessage').innerText = `Greetings, ${name}. Are you a fan?`;
+            }, 1000);
+        }
+
+        function verifyCredentials() {
+            const user = document.getElementById('usernameInput').value;
+            const pass = document.getElementById('passInput').value;
+
+            if (user.trim() !== "" && pass === SECRET_KEY) {
+                currentUser = user;
+                playPersonalizedSequence(currentUser);
             } else {
-                alert("UNAUTHORIZED ACCESS ATTEMPT");
+                alert("ACCESS DENIED");
             }
         }
 
@@ -146,30 +163,16 @@
             if (questionUI.style.display === "none") return;
 
             const rect = noBtn.getBoundingClientRect();
-            const btnX = rect.left + rect.width / 2;
-            const btnY = rect.top + rect.height / 2;
+            const dist = Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2));
 
-            const dist = Math.hypot(e.clientX - btnX, e.clientY - btnY);
-
-            // If mouse is within 180px, flee away
             if (dist < 180) {
-                const angle = Math.atan2(btnY - e.clientY, btnX - e.clientX);
-                const jumpDist = 250; 
+                const angle = Math.atan2((rect.top + rect.height/2) - e.clientY, (rect.left + rect.width/2) - e.clientX);
+                let newX = rect.left + Math.cos(angle) * 250;
+                let newY = rect.top + Math.sin(angle) * 250;
 
-                let newX = rect.left + Math.cos(angle) * jumpDist;
-                let newY = rect.top + Math.sin(angle) * jumpDist;
-
-                // Keeps the button from vanishing off-screen[cite: 3]
-                const pad = 80;
-                const winW = window.innerWidth;
-                const winH = window.innerHeight;
-
-                if (newX < pad || newX > winW - rect.width - pad) {
-                    newX = Math.random() * (winW - rect.width - pad * 2) + pad;
-                }
-                if (newY < pad || newY > winH - rect.height - pad) {
-                    newY = Math.random() * (winH - rect.height - pad * 2) + pad;
-                }
+                // Stay on screen
+                newX = Math.max(50, Math.min(newX, window.innerWidth - 150));
+                newY = Math.max(50, Math.min(newY, window.innerHeight - 100));
 
                 noBtn.style.left = newX + 'px';
                 noBtn.style.top = newY + 'px';
@@ -177,13 +180,7 @@
         }
 
         function triggerCelebration() {
-            confetti({
-                particleCount: 200,
-                spread: 100,
-                origin: { y: 0.6 },
-                colors: ['#00d4ff', '#ffffff', '#ff4d4d']
-            });
-
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
             setTimeout(() => {
                 document.getElementById('question-ui').style.display = "none";
                 startTerminal();
@@ -194,34 +191,23 @@
             const term = document.getElementById('terminal');
             term.style.display = "block";
             const logs = [
-                "> INITIALIZING EMOTIONAL OVERRIDE...",
-                "> BYPASSING LOCAL FIREWALLS...",
-                "> DEPLOYING STARK-OS CELEBRATION...",
-                "> ACCESSING ENCRYPTED MEDIA: vijay_entry.mp4...",
-                "> AUTHENTICATION SUCCESSFUL."
+                `> ACCESSING STARK DATABASE...`,
+                `> USER ${currentUser.toUpperCase()} VERIFIED...`,
+                "> DEPLOYING vijay_entry.mp4..."
             ];
-
             let i = 0;
             function type() {
                 if (i < logs.length) {
-                    term.innerHTML += `<p style="margin: 5px 0;">${logs[i]}</p>`;
-                    i++;
+                    term.innerHTML += `<p>${logs[i]}</p>`; i++;
                     setTimeout(type, 700);
-                } else {
-                    setTimeout(showVideo, 500);
-                }
+                } else { setTimeout(showVideo, 500); }
             }
             type();
         }
 
         function showVideo() {
-            // Apply the background image[cite: 3]
-            const bg = "https://lh3.googleusercontent.com/pw/AP1GczOCB5V1R7M5p-E_I9u-e6z0R1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1zR1R9R-E1z=w1920-h887-s-no-gm?authuser=0";
-            document.body.style.backgroundImage = `url('${bg}')`;
-            
             document.getElementById('terminal').style.display = "none";
-            const wrap = document.getElementById('video-wrap');
-            wrap.style.display = "block";
+            document.getElementById('video-wrap').style.display = "block";
             const vid = document.getElementById('celebrationVideo');
             vid.play();
             if (vid.requestFullscreen) vid.requestFullscreen();
